@@ -1,44 +1,27 @@
 """---APP_VETERINARIA.PY--- POR FLORENCIA GONZALEZ Y AUGUSTO MENENDEZ CONDE DELMONTE
 
-    Una app para una veterinaria donde el usuario pueda:
-    1. Rregistrar clientes nuevos y sus respectivas mascotas.
-    2. Modificar cliente y agregar o quitar mascota.
-    3. Eliminar cliente.
-    4. Agendar citas médicas y tipo de cita o servicio ej: baño, corte, vacuna, desparacitacion.
-    5. Modificar o cancelar cita médica.
-    6. Listar clientes.
-    7. Listar citas.
-    8. Acceder al historial de cada mascota.
-    9. Historial de pagos y servicios.
-    10. Terminar.
+    El siguiente es un programa pensado para una veterinaria que permite al usuario:
+    1. Registrar clientes nuevos y sus respectivas mascotas.
+    2. Modificar clientes y agregar o quitar mascotas.
+    3. Eliminar clientes.
+    4. Agendar citas médicas y tipo de cita o servicio ej: baño, corte de pelo, vacuna, desparasitación.
+    5. Modificar o cancelar cita.
+    6. Listar los clientes y sus datos.
+    7. Terminar
     """
-import re,calendar,datetime as dt
-clientes = {} # variable utilizada en todo el código
-dia_actual = dt.date.today() # variable utilizada en la función crearCita()
-mes_actual = dia_actual.month # variable utilizada para la variable proximo_mes
-proximo_mes = mes_actual+1 if mes_actual < 12 else 1 # variable utilizada en la función crearCita()
-año_proximo_mes = dia_actual.year if proximo_mes>1 else dia_actual.year+1 # variable utilizada en la variable dias_proximo_mes
-dias_proximo_mes = calendar.monthrange(año_proximo_mes,proximo_mes) # variable utilizada en la función crearCita()
-seleccion_dia, seleccion_horario, seleccion_servicio = "","",""
-citas_dt = [] # lista con todas las citas agendadas en formato datetime, utilizada por la función crearCita() para evitar citas duplicadas
-citas_dicc = {} # diccionario con detalles de las citas agendadas
-# listas utilizadas por la función menu()
-lista_menu_principal = ["Agregar cliente nuevo","Modificar cliente","Eliminar cliente","Agendar cita","Modificar o cancelar cita","Lista de clientes","Salir"]
-lista_menu_secundario = ["Agregar nueva mascota","Salir"]
-servicios = ["consulta general","exámenes médicos","baño","corte de pelo","baño y corte de pelo","revisión médica","vacuanción","desparasitación","cirugía"]
-# lista utilizada por la función validacion()
-patron = ["^[a-zA-Zá-ñÑóÁÉÍÓÚüÜ ]+$","^[0-9a-zA-Zá-ñÑóÁÉÍÓÚüÜ. ]+$","^[0-9]+$"]
-
-especies_mascotas = ['Perro', 'Gato', 'Conejo', 'Cobaya', 'Hurón', 'Rata', 'Hámster', 'Canario', 'Periquito', 'Loro', 'Pájaro cantor', 'Serpiente de maíz', 'Tortuga de agua', 'Pez dorado', 'Conejillo de Indias', 'Caracol de tierra', 'Ratón', 'Gallina', 'Paloma', 'Otro']
-generos_mascotas =["M","F","n/a"]
+import json,re,time,os,calendar,datetime as dt
+clientes = {} # diccionario que guarda todos los datos de cada cliente, se accede a los datos mediante el nombre y apellido del cliente, no se permiten clientes con el mismo nombre.
+citas_dt = [] # lista con todas las citas agendadas en formato datetime, utilizada por la función crearCita() para evitar citas duplicadas.
+citas_dicc = {} # diccionario con detalles de las citas agendadas.
+patron = ["^[a-zA-Zá-ñÑóÁÉÍÓÚüÜ ]+$","^[0-9a-zA-Zá-ñÑóÁÉÍÓÚüÜ. ]+$","^[0-9]+$"] # lista que funciona con el módulo re y la funcion validacion(), cada índice en la lista incluye los caracteres disponibles para un determinado input
 
 def validacion(Patron,dato):
     """Función que verifica que los caracteres ingresados por el usuario estén permitidos dentro de un input.
 
     Args:
-        patron (list): patron[i] lista que contiene diversos strings a los que se accede con el índice y que funcionan con el módulo re(regular expressions).
+        patron (list): patron[i] lista que contiene diversos str a los que se accede con el índice y que funcionan con el módulo re(regular expressions).
         Cada uno de los strings provee los caracteres disponibles por el usuario para un determinado input.
-        dato (type): Variable a la cual se verificará que sus caracteres se encuentren dentro del rango de caracteres permitidos para el input que le dio valor.
+        dato (str): Variable a la cual se verificará que sus caracteres se encuentren dentro del rango de caracteres permitidos para el input que le dio valor.
 
     Returns:
         True: Si todos los caracteres dentro de la variable son permitidos para el input.
@@ -48,6 +31,23 @@ def validacion(Patron,dato):
         return True
     else:
         return False
+
+def limpiarPantalla():
+    """ Función que espera un determinado tiempo y luego limpia la pantalla. """
+    time.sleep(1.5)
+    os.system('cls')
+
+def opcNoValida():    
+    """ Función que muestra un mensaje de error, espera un determinado tiempo y borra el mensaje para mayor prolijidad. """
+    print("\nOpción no válida, intente nuevamente.")
+    time.sleep(1.5)
+    print("\033[F\033[2K\033[F\033[2K\033[F\033[2K", end='')
+    
+def charsNoPermitidos():
+    """ Función que muestra un mensaje de error, espera un determinado tiempo y borra el mensaje para mayor prolijidad. """
+    print("\nHa ingresado caracteres no permitidos, inténtelo de nuevo.")
+    time.sleep(1.5)
+    print("\033[F\033[2K\033[F\033[2K\033[F\033[2K", end='')
 
 def menu(lista_menu):
     """Función que genera un menú con opciones enumeradas a partir de una lista con las opciones deseadas.
@@ -66,6 +66,11 @@ def diasHorasDisponibles():
     Returns:
         _list_: [(str),(str)...] , [(str),(str)...]
     """
+    dia_actual = dt.date.today() 
+    mes_actual = dia_actual.month 
+    proximo_mes = mes_actual+1 if mes_actual < 12 else 1 
+    año_proximo_mes = dia_actual.year if proximo_mes>1 else dia_actual.year+1 
+    dias_proximo_mes = calendar.monthrange(año_proximo_mes,proximo_mes) 
     dias_citas_disponibles = []
     horas_disponibles = []
     horarios_citaH = list(range(10,18))
@@ -98,415 +103,737 @@ def crearCita():
     Returns:
         _int_: _FECHA_ , _int_: _HORA_ , _int_: _SERVICIO_
     """
+    servicios = ["consulta general","exámenes médicos","baño","corte de pelo","baño y corte de pelo","revisión médica","vacunación","desparasitación","cirugía"]
     dias_citas_disponibles, horas_disponibles = diasHorasDisponibles()
     print("Indique el dia de la cita.")
+    time.sleep(1.5)
     menu(dias_citas_disponibles)
     seleccion_dia = input(": ")
     while not seleccion_dia.isdigit():
-            seleccion_dia = input("Opción no válida, intente nuevamente: ")
+        opcNoValida()
+        seleccion_dia = input(": ")
     while int(seleccion_dia) < 1 or int(seleccion_dia) > dias_citas_disponibles.__len__():
-        seleccion_dia = input("Opción no válida, intente nuevamente: ")
+        opcNoValida()
+        seleccion_dia = input(": ")
     seleccion_dia = int(seleccion_dia)
-    print("Indique el horario de la cita.")
+    print("\nIndique el horario de la cita.")
+    time.sleep(1.5)
     menu(horas_disponibles)
     seleccion_horario = input(": ")
     while not seleccion_horario.isdigit():
-            seleccion_horario = input("Opción no válida, intente nuevamente: ")
+        opcNoValida()
+        seleccion_horario = input(": ")
     while int(seleccion_horario) < 1 or int(seleccion_horario) > horas_disponibles.__len__():
-        seleccion_horario = input("Opción no válida, intente nuevamente: ")
+        opcNoValida()
+        seleccion_horario = input(": ")
     seleccion_horario = int(seleccion_horario)
-    print("Indique el servicio motivo de la cita.")
+    print("\nIndique el servicio/motivo de la cita.")
+    time.sleep(1.5)
     menu(servicios)
     seleccion_servicio = input(": ")
     while not seleccion_servicio.isdigit():
-            seleccion_servicio = input("Opción no válida, intente nuevamente: ")
+        opcNoValida()
+        seleccion_servicio = input(": ")
     while int(seleccion_servicio) < 1 or int(seleccion_servicio) > servicios.__len__():
-        seleccion_servicio = input("Opción no válida, intente nuevamente: ")
+        opcNoValida()
+        seleccion_servicio = input(": ")
     seleccion_servicio = int(seleccion_servicio)
     return seleccion_dia, seleccion_horario, seleccion_servicio
 
 def agregarMascota():
-    """Función que solicita información sobre una mascota mediante inputs con validación, guarda la información en variables y luego retorna esas variables. 
+    """Función que solicita información sobre una mascota mediante inputs con validación, guarda la información en una lista y luego retorna la lista. 
 
     Returns:
-        _str_: nombre_mascota , especie_mascota , genero_mascota , raza_mascota , edad_mascota
+        _list_: [{nombre_mascota , especie_mascota , sexo_mascota , raza_mascota , edad_mascota}]
     """
+    sexo_mascotas =["M","H","n/a"]
+    especies_mascotas = ['Perro', 'Gato', 'Conejo', 'Cobayo', 'Hurón', 'Rata', 'Hámster', 'Canario', 'Periquito', 'Loro', 'Pájaro cantor', 'Serpiente de maíz', 'Tortuga de agua', 'Pez dorado', 'Conejillo de Indias', 'Caracol de tierra', 'Ratón', 'Gallina', 'Paloma', 'Otro']
     mascotas = {}
     mascotas_todas = []
-    nombre_mascota = input("Ingrese el nombre la mascota: ")
+    nombre_mascota = input("\nIngrese el nombre la mascota: ")
     while validacion(patron[0],nombre_mascota) == False:
-        nombre_mascota = input("Ha ingresado caracteres no permitidos, intentelo de nuevo.\n\tNombre de la mascota: ")
-    print("Ingrese la especie de la mascota.")
+        charsNoPermitidos()
+        nombre_mascota = input("\nIngrese el nombre de la mascota: ")
+    print("\nIngrese la especie de la mascota.")
+    time.sleep(0.5)
     menu(especies_mascotas)
     especie_mascota = input(": ")
-    while not especie_mascota.isdigit(): 
-        input("Opción no válida, intente nuevamente: ")
+    while not especie_mascota.isdigit():
+        opcNoValida()
+        especie_mascota = input(": ")
     while int(especie_mascota) < 1 or int(especie_mascota) > especies_mascotas.__len__():
-        especie_mascota = input("Opción no válida, intente nuevamente: ")
+        opcNoValida()
+        especie_mascota = input(": ")
     especie_mascota = (int(especie_mascota))-1
     especie_mascota = especies_mascotas[especie_mascota]
     if especie_mascota == 'Otro':
         especie_mascota = input("Ingrese la especie de la mascota: ")
     while validacion(patron[0],especie_mascota) == False:
-        especie_mascota = input("Ha ingresado caracteres no permitidos, intentelo de nuevo.\n\tEspecie de la mascota: ")
-    print("Ingrese el género de la mascota.")
-    menu(generos_mascotas)
-    genero_mascota = input(": ")
-    while not genero_mascota.isdigit():
-        genero_mascota = input("Opción no válida, intente nuevamente: ")
-    while int(genero_mascota) < 1 or int(genero_mascota) > generos_mascotas.__len__():
-        genero_mascota = input("Opción no válida, intente nuevamente: ")
-    genero_mascota = (int(genero_mascota))-1
-    genero_mascota = generos_mascotas[genero_mascota]
-    raza_mascota = input("Ingrese la raza de la mascota: ")
+        charsNoPermitidos()
+        especie_mascota = input("Ingrese la especie de la mascota: ")
+    print("\nIngrese el sexo de la mascota.")
+    menu(sexo_mascotas)
+    sexo_mascota = input(": ")
+    while not sexo_mascota.isdigit():
+        opcNoValida()
+        sexo_mascota = input(": ")
+    while int(sexo_mascota) < 1 or int(sexo_mascota) > sexo_mascotas.__len__():
+        opcNoValida()
+        sexo_mascota = input(": ")
+    sexo_mascota = (int(sexo_mascota))-1
+    sexo_mascota = sexo_mascotas[sexo_mascota]
+    raza_mascota = input("\nIngrese la raza de la mascota: ")
     while validacion(patron[0],raza_mascota) == False:
-        raza_mascota = input("Ha ingresado caracteres no permitidos, intentelo de nuevo.\n\tRaza de la mascota: ")
-    edad_mascota = input("Ingrese la edad de la mascota: ")
+        charsNoPermitidos()
+        raza_mascota = input("Ingrese la raza de la mascota: ")
+    edad_mascota = input("\nIngrese la edad de la mascota: ")
     while validacion(patron[2],edad_mascota) == False:
-        edad_mascota = input("Ha ingresado caracteres no permitidos, intentelo de nuevo.\n\tEdad de la mascota: ")
+        charsNoPermitidos()
+        edad_mascota = input("Ingrese la edad de la mascota: ")
     while (int(edad_mascota))>100:
-        edad_mascota = input("Ha ingresado un número demasiado grande, intentelo de nuevo.\n\tEdad de la mascota:  ")
-    mascotas[nombre_mascota] = {"Nombre" : nombre_mascota.capitalize(),"Especie" : especie_mascota,"Género" : genero_mascota,"Raza" : raza_mascota.title(),"Edad" : edad_mascota}
-    mascotas_todas.append(mascotas[nombre_mascota])
+        print("\nHa ingresado un número demasiado grande, inténtelo de nuevo.")
+        time.sleep(1.5)
+        print("\033[F\033[2K\033[F\033[2K\033[F\033[2K", end='')
+        edad_mascota = input("Ingrese la edad de la mascota: ")
+    mascotas[nombre_mascota.lower().title()] = {"Nombre" : nombre_mascota.lower().title(),"Especie" : especie_mascota.lower().title(),"Sexo" : sexo_mascota,"Raza" : raza_mascota.lower().title(),"Edad" : edad_mascota}
+    mascotas_todas.append(mascotas[nombre_mascota.lower().title()])
 
     return mascotas_todas
 
 def clienteNuevo():
     """Función que agrega un cliente nuevo mediante inputs con validación y almacena sus datos en un diccionario.
     """
+    datos_clientes,datos_citas_dt,datos_citas_dicc = cargarTodos()
+    lista_menu_secundario = ["Agregar nueva mascota","Salir"]
     agregarOcancelar = ["Ingresar cliente nuevo","Cancelar"]
-    print("Menú agregar cliente nuevo.")
+    print("Menú agregar cliente nuevo.\n")
     menu(agregarOcancelar)
     agregarOcancelar = input(": ")    
     while not re.match("^[12]+$",agregarOcancelar):
-        agregarOcancelar = input("Opción no válida, intente nuevamente: ")
+        opcNoValida()
+        agregarOcancelar = input(": ")
     if agregarOcancelar == "1":
-        nombre = input("Ingrese el nombre del cliente: ")
+        nombre = input("\nIngrese el nombre del cliente: ")
         while validacion(patron[0],nombre) == False:
-            nombre = input("Ha ingresado caracteres no permitidos, intentelo de nuevo.\n\tNombre del cliente: ")
+            charsNoPermitidos()
+            nombre = input("\nIngrese el nombre del cliente: ")
         while len(nombre) == 1:
-            nombre = input("Caracteres insuficientes, no se permiten iniciales en el nombre: ")
-        apellido = input("Ingrese el/los apellido/s del cliente: ")
+            print("\nCaracteres insuficientes, no se permiten iniciales en el nombre.")
+            time.sleep(1.5)
+            print("\033[F\033[2K\033[F\033[2K\033[F\033[2K", end='')
+            nombre = input("Ingrese el nombre del cliente: ")
+        apellido = input("\nIngrese el/los apellido/s del cliente: ")
         while validacion(patron[0],apellido) == False:
-            apellido = input("Ha ingresado caracteres no permitidos, intentelo de nuevo.\n\tApellido del cliente: ")      
+            charsNoPermitidos()
+            apellido = input("Ingrese el/los apellido/s del client: ")      
         if len(apellido) == 1:
             apellido = f"{apellido}." # un apellido de un solo caracter se considera una inicial y se le agrega un punto
-        dirección = input("Ingrese la dirección del cliente: ")
-        while validacion(patron[1],dirección) == False:
-            dirección = input("Ha ingresado caracteres no permitidos, intentelo de nuevo.\n\tDirección del cliente: ")
-        telefono = input("Ingrese el teléfono del cliente: ")
-        while validacion(patron[2],telefono) == False or len(telefono) > 12 or len(telefono) < 8:
-            if len(telefono) > 12:
-                telefono = input("Ha ingresado demasiados caracteres, ingrese el número de teléfono sin espacios\n\tTeléfono del cliente: ")
-            elif len(telefono) < 8:
-                telefono = input("Ha ingresado caracteres insuficientes, ingrese el número de teléfono sin espacios\n\tTeléfono del cliente: ")
-            else:
-                telefono = input("Ha ingresado caracteres no permitidos, ingrese el número de teléfono sin espacios\n\tTeléfono del cliente: ")
-        clientes[(nombre.title())+" "+(apellido.title())] = {"Dirección" : dirección.title(),"Teléfono" : telefono, "Mascota/s" : []}
-        print("Desea agregar una mascota nueva?: ")
-        menu(lista_menu_secundario)
-        agregar_mascota = input(": ")
-        while not agregar_mascota == "2":
-            if agregar_mascota == "1":
-                clientes[(nombre.title())+" "+(apellido.title())]["Mascota/s"].extend(agregarMascota())
-                print("Desea agregar una mascota nueva?: ")
-                menu(lista_menu_secundario)
-                agregar_mascota = input(": ")
-            else:
-                agregar_mascota = input("Opción no válida, intente nuevamente: ")
+        if not clientes.get((nombre.lower().title())+" "+(apellido.lower().title()),"")=="":
+            print("\nEl cliente que intenta crear ya existe.")
+            limpiarPantalla()
+        else:
+            dirección = input("\nIngrese la dirección del cliente: ")
+            while validacion(patron[1],dirección) == False:
+                charsNoPermitidos()
+                dirección = input("Ingrese la dirección del cliente: ")
+            telefono = input("\nIngrese el teléfono del cliente: ")
+            while validacion(patron[2],telefono) == False or len(telefono) > 12 or len(telefono) < 8:
+                if len(telefono) > 12:
+                    print("\nHa ingresado demasiados caracteres, ingrese el número de teléfono sin espacios.")
+                    time.sleep(1.5)
+                    print("\033[F\033[2K\033[F\033[2K", end='')
+                    telefono = input("Ingrese el teléfono del cliente: ")
+                elif len(telefono) < 8:
+                    print("\nHa ingresado caracteres insuficientes, ingrese el número de teléfono sin espacios.")
+                    time.sleep(1.5)
+                    print("\033[F\033[2K\033[F\033[2K", end='')
+                    telefono = input("Ingrese el teléfono del cliente: ")
+                else:
+                    charsNoPermitidos()
+                    telefono = input("Ingrese el teléfono del cliente: ")
+            clientes[(nombre.lower().title())+" "+(apellido.lower().title())] = {"Dirección" : dirección.lower().title(),"Teléfono" : telefono, "Mascota/s" : []}
+            print("\nCliente creado exitosamente.")
+            limpiarPantalla()
+            print("Desea agregar una mascota nueva?: \n")
+            menu(lista_menu_secundario)
+            agregar_mascota = input(": ")
+            while not agregar_mascota == "2":
+                if agregar_mascota == "1":
+                    mascota_nueva = agregarMascota()
+                    i = 0
+                    if clientes[(nombre.lower().title())+" "+(apellido.lower().title())]["Mascota/s"] == []:
+                        clientes[(nombre.lower().title())+" "+(apellido.lower().title())]["Mascota/s"].extend(mascota_nueva)
+                        print("\nMascota agregada exitosamente.")
+                        limpiarPantalla()
+                    else:
+                        for diccionario in clientes[(nombre.lower().title())+" "+(apellido.lower().title())]["Mascota/s"]:
+                            if diccionario["Nombre"] == mascota_nueva[0]["Nombre"]:
+                                i += 1                       
+                            else:
+                                continue
+                        if i == 0:
+                            clientes[(nombre.lower().title())+" "+(apellido.lower().title())]["Mascota/s"].extend(mascota_nueva)
+                            print("\nMascota agregada exitosamente.")
+                            limpiarPantalla()
+                        else:
+                            print("\nEl nombre de la mascota que desea agregar ya existe.")
+                            limpiarPantalla()
+                    print("Desea agregar una mascota nueva?: \n")
+                    menu(lista_menu_secundario)
+                    agregar_mascota = input(": ")
+                else:
+                    opcNoValida()
+                    agregar_mascota = input(": ")
+            limpiarPantalla()
     else:
-        print("Cancelado.")
+        print("\nCancelado.")
+        limpiarPantalla()
+    guardarTodos(datos_clientes,datos_citas_dt,datos_citas_dicc)
 
 def modificarCliente():
     """Función que que solicita de input nombre y apellido de un cliente existente y accede al diccionario que contiene sus datos para luego poder modificarlos, contiene validaciones para todos los inputs.
     """
-    mascotas_todas=[]
+    datos_clientes,datos_citas_dt,datos_citas_dicc = cargarTodos()
+    lista_menu_secundario = ["Agregar nueva mascota","Salir"]
     lista_keys = ["Nombre y apellido","Dirección","Teléfono","Mascota"]
     modificarOcancelar= ["Ingresar cliente a modificar","Cancelar"]
-    print("Menú modificar Cliente")
+    print("Menú modificar Cliente.\n")
     menu(modificarOcancelar)
     modificarOcancelar = input(": ")
     while not re.match("^[12]+$",modificarOcancelar):
-        modificarOcancelar = input("Opción no válida, intente nuevamente: ")
+        opcNoValida()
+        modificarOcancelar = input(": ")
     if modificarOcancelar == "1":    
-        modificar_usuario = input("Ingrese nombre y apellido del cliente separado por espacio: ").capitalize()
+        modificar_usuario = input("\nIngrese nombre y apellido del cliente separado por espacio: ")
+        modificar_usuario = modificar_usuario.lower().title()
         if modificar_usuario in clientes:
-            print("Indique el campo que desea modificar")
+            print("\nCliente identificado.")
+            time.sleep(2)
+            limpiarPantalla()
+            print("Indique el campo que desea modificar:\n")
             menu(lista_keys)
             modificar_campo =input(": ")
             while not modificar_campo.isdigit():
-                modificar_campo = input("Opción no válida, intente nuevamente: ")
+                opcNoValida()
+                modificar_campo = input(": ")
             while int(modificar_campo) < 1 or int(modificar_campo) > lista_keys.__len__():
-                modificar_campo = input("Opción no válida, intente nuevamente: ")            
+                opcNoValida()
+                modificar_campo = input(": ")            
             match modificar_campo:
                 case "1":
-                    nombre = input("Ingrese el nombre del cliente: ")
+                    nombre = input("\nIngrese el nuevo nombre del cliente: ")
                     while validacion(patron[0],nombre) == False:
-                        nombre = input("Ha ingresado caracteres no permitidos, intentelo de nuevo.\n\tNombre del cliente: ")
+                        charsNoPermitidos()
+                        nombre = input("\nIngrese el nuevo nombre del cliente: ")
                     while len(nombre) == 1:
-                        nombre = input("Caracteres insuficientes, no se permiten iniciales en el nombre: ")
-                    apellido = input("Ingrese el/los apellido/s del cliente: ")
+                        print("\nCaracteres insuficientes, no se permiten iniciales en el nombre.")
+                        time.sleep(1.5)
+                        print("\033[F\033[2K\033[F\033[2K\033[F\033[2K", end='')
+                        nombre = input("\nIngrese el nuevo nombre del cliente: ")
+                    apellido = input("Ingrese el/los nuevo/s apellido/s del cliente: ")
                     while validacion(patron[0],apellido) == False:
-                        apellido = input("Ha ingresado caracteres no permitidos, intentelo de nuevo.\n\tApellido del cliente: ")      
+                        charsNoPermitidos()
+                        apellido = input("Ingrese el/los nuevo/s apellido/s del cliente: ")      
                     if len(apellido) == 1:
                         apellido = f"{apellido}."
-                    if f"{nombre} {apellido}" == modificar_usuario:
-                        print("Ha ingresado el mismo nombre y apellido ya existente.")
+                    if f"{nombre.lower().title()} {apellido.lower().title()}" == modificar_usuario:
+                        print("\nHa ingresado el nombre y apellido de un cliente ya existente.")
+                        limpiarPantalla()
                     else:
-                        clientes[f"{nombre} {apellido}"]=clientes[modificar_usuario]
+                        clientes[f"{nombre.lower().title()} {apellido.lower().title()}"]=clientes[modificar_usuario]
                         del clientes[modificar_usuario]
-                        print("Nombre y apellido modificados exitosamente.")
+                        print("\nNombre y apellido modificados exitosamente.")
+                        limpiarPantalla()
                 case "2":
                     for clave in clientes[modificar_usuario].keys():
                         if clave == "Dirección":
-                            direccion = input("Ingrese la Dirección: ")
-                            while validacion(patron[1],direccion)== False:
-                                direccion = input("Ha ingresado caracteres no permitidos, intentelo de nuevo.\n\tDirección del cliente: ")
-                            clientes[modificar_usuario][clave] = direccion
-                            print("Dirección modificada exitosamente.")
+                            direccion_registrada = clientes[modificar_usuario][clave]
+                            direccion_nueva = input("\nIngrese la nueva dirección: ").lower().title()
+                            while validacion(patron[1], direccion_nueva) == False:
+                                charsNoPermitidos()
+                                direccion_nueva = input("Ingrese la nueva dirección: ").lower().title()
+                            if direccion_nueva == direccion_registrada:
+                                print("\nLa dirección modificada es idéntica a la anterior.")
+                                limpiarPantalla()
+                            else:
+                                clientes[modificar_usuario][clave] = direccion_nueva
+                                print("\nDirección modificada exitosamente.")
+                                limpiarPantalla()
                 case "3":
                     for clave in clientes[modificar_usuario].keys():
                         if clave == "Teléfono":
-                            telefono = input("Ingrese el teléfono: ")
-                            while validacion(patron[2],telefono) == False or len(telefono) > 12 or len(telefono) < 8:
-                                if len(telefono) > 12:
-                                    telefono = input("Ha ingresado demasiados caracteres, ingrese el número de teléfono sin espacios\n\tTeléfono del cliente: ")
-                                elif len(telefono) < 8:
-                                    telefono = input("Ha ingresado caracteres insuficientes, ingrese el número de teléfono sin espacios\n\tTeléfono del cliente: ")
+                            telefono_registrado = clientes[modificar_usuario][clave]
+                            telefono_nuevo = input("\nIngrese el nuevo teléfono: ")
+                            while validacion(patron[2],telefono_nuevo) == False or len(telefono_nuevo) > 12 or len(telefono_nuevo) < 8:
+                                if len(telefono_nuevo) > 12:
+                                    print("\nHa ingresado demasiados caracteres, ingrese el número de teléfono sin espacios.")
+                                    time.sleep(1.5)
+                                    print("\033[F\033[2K\033[F\033[2K\033[F\033[2K", end='')
+                                    telefono_nuevo = input("Ingrese el nuevo teléfono del cliente: ")
+                                elif len(telefono_nuevo) < 8:
+                                    print("\nHa ingresado caracteres insuficientes, ingrese el número de teléfono sin espacios.")
+                                    time.sleep(1.5)
+                                    print("\033[F\033[2K\033[F\033[2K\033[F\033[2K", end='')
+                                    telefono_nuevo = input("Ingrese el nuevo teléfono: ")
                                 else:
-                                    telefono = input("Ha ingresado caracteres no permitidos, ingrese el número de teléfono sin espacios\n\tTeléfono del cliente: ") 
-                            clientes[modificar_usuario][clave] = telefono
-                            print("Teléfono modificado exitosamente.")
+                                    print("\nHa ingresado caracteres no permitidos, ingrese el número de teléfono sin espacios.")
+                                    time.sleep(1.5)
+                                    print("\033[F\033[2K\033[F\033[2K\033[F\033[2K", end='')
+                                    telefono_nuevo = input("Ingrese el nuevo teléfono: ")
+                            if telefono_registrado == telefono_nuevo:
+                                print("\nEl teléfono modificado es idéntico a la anterior.")
+                                limpiarPantalla()
+                            else:
+                                clientes[modificar_usuario][clave] = telefono_nuevo
+                                print("\nTeléfono modificado exitosamente.")
+                                limpiarPantalla()
                 case "4":
-                    ops_modificar_mascota = ["Agregar mascota","Modificar mascota","eliminar mascota"]
-                    print ("menú modificar mascota.")
+                    limpiarPantalla()
+                    ops_modificar_mascota = ["Agregar mascota","Modificar mascota","Eliminar mascota"]
+                    print ("Menú modificar mascota.\n")
                     menu(ops_modificar_mascota)
                     opcion_usuario = input(": ")
                     while not re.match("^[123]+$",opcion_usuario):
-                        opcion_usuario = input("Opción no válida, intente nuevamente: ")
+                        opcNoValida()
+                        opcion_usuario = input(": ")
                     if opcion_usuario == "1":
+                        limpiarPantalla()
                         print("Agregar mascota.")
                         agregar_mascota = "1"
                         while not agregar_mascota == "2":
-                            if agregar_mascota == "1":
-                                mascota = agregarMascota()
-                                if mascota in clientes[modificar_usuario]["Mascota/s"]:
-                                    print("La mascota que desea agregar ya existe en la base de datos.")
-                                    agregar_mascota = "2"
-                                else:
-                                    clientes[modificar_usuario]["Mascota/s"].extend(mascota)
-                                    print("Desea agregar una mascota nueva?: ")
-                                    menu(lista_menu_secundario)
-                                    agregar_mascota = input(": ")
+                            mascota_nueva = agregarMascota()
+                            contador = 0
+                            if clientes[modificar_usuario]["Mascota/s"] == []:
+                                clientes[modificar_usuario]["Mascota/s"].extend(mascota_nueva)
+                                print("\nMascota agregada exitosamente.")
+                                limpiarPantalla()
                             else:
-                                agregar_mascota = input("Opción no válida, intente nuevamente: ")
-                        print("Mascota/s creada/s exitosamente.")
+                                for diccionario in clientes[modificar_usuario]["Mascota/s"]:
+                                    if diccionario["Nombre"] == mascota_nueva[0]["Nombre"]:
+                                        contador += 1
+                                    else:
+                                        continue                      
+                                if contador == 0:
+                                    clientes[modificar_usuario]["Mascota/s"].extend(mascota_nueva)
+                                    print("\nMascota agregada exitosamente.")
+                                    limpiarPantalla()
+                                else:
+                                    print("\nEl nombre de la mascota que desea agregar ya existe.")
+                                    limpiarPantalla()
+                            print("Desea agregar una mascota nueva?: \n")
+                            menu(lista_menu_secundario)
+                            agregar_mascota = input(": ")
+                        limpiarPantalla()
                     elif opcion_usuario == "2":
+                        limpiarPantalla()
                         print("Modificar mascota.")
-                        modificar_mascota = input("Ingrese el nombre de la mascota a modificar.\n\tEn caso de no haber una coincidencia retorna al menú principal.\n: ")
+                        modificar_mascota = input("\nIngrese el nombre de la mascota a modificar.\nEn caso de no haber una coincidencia retorna al menú principal.\n: ")
+                        modificar_mascota = modificar_mascota.lower().title()
                         for diccionario in clientes[modificar_usuario]["Mascota/s"]:
                             if modificar_mascota in diccionario.values():
                                 for i, diccionario in enumerate(clientes[modificar_usuario]["Mascota/s"]):
                                     if diccionario["Nombre"] == modificar_mascota:
+                                        mascota_eliminada = clientes[modificar_usuario]["Mascota/s"][i]
                                         del clientes[modificar_usuario]["Mascota/s"][i]
-                                clientes[modificar_usuario]["Mascota/s"].extend(agregarMascota())
-                                print("Mascota modificada exitosamente.")
+                                        mascota_nueva = agregarMascota()
+                                        contador = 0
+                                        for diccionario in clientes[modificar_usuario]["Mascota/s"]:
+                                            if diccionario["Nombre"] == mascota_nueva[0]["Nombre"]:
+                                                contador += 1                       
+                                            else:
+                                                continue
+                                        if contador == 0:
+                                            clientes[modificar_usuario]["Mascota/s"].extend(mascota_nueva)
+                                            print("\nMascota modificada exitosamente.")
+                                            limpiarPantalla()
+                                        else:
+                                            print("\nEl nombre de la mascota que desea agregar ya existe en la base de datos.")
+                                            clientes[modificar_usuario]["Mascota/s"].extend(mascota_eliminada)
+                                            limpiarPantalla()               
                             else:
                                 continue
+                        limpiarPantalla()
                     elif opcion_usuario == "3":
+                        limpiarPantalla()
                         print("Eliminar mascota.")
-                        eliminar_mascota = input("Ingrese el nombre de la mascota a eliminar.\n\tEn caso de no haber una coincidencia retorna al menú principal.\n: ")
+                        eliminar_mascota = input("\nIngrese el nombre de la mascota a eliminar.\nEn caso de no haber una coincidencia retorna al menú principal.\n: ")
+                        eliminar_mascota = eliminar_mascota.lower().title()
                         for diccionario in clientes[modificar_usuario]["Mascota/s"]:
                             if eliminar_mascota in diccionario.values():
                                 for i, diccionario in enumerate(clientes[modificar_usuario]["Mascota/s"]):
                                     if diccionario["Nombre"]==eliminar_mascota:
                                         del clientes[modificar_usuario]["Mascota/s"][i]
-                                        print("Mascota eliminada exitosamente.")
+                                        print("\nMascota eliminada exitosamente.")
+                                        limpiarPantalla()
                             else:
                                 continue
+                        limpiarPantalla()
         else:
-            print("Cliente no encontrado en la base de datos.")
+            print("\nCliente no encontrado.")
+            limpiarPantalla()
     else:
-        print("Cancelado.")
+        print("\nCancelado.")
+        limpiarPantalla()
+    guardarTodos(datos_clientes,datos_citas_dt,datos_citas_dicc)
 
 def eliminarCliente():
     """Función que verifica la existencia de un cliente en el diccionario "clientes" y lo elimina del registro.
     """
+    datos_clientes,datos_citas_dt,datos_citas_dicc = cargarTodos()
     eliminarOcancelar= ["Ingresar cliente a eliminar","Cancelar"]
-    print("Menú eliminar cliente.")
+    print("Menú eliminar cliente.\n")
     menu(eliminarOcancelar)
     eliminarOcancelar = input(": ")
     while not re.match("^[12]+$",eliminarOcancelar):
-        eliminarOcancelar = input("Opción no válida, intente nuevamente: ")
+        opcNoValida()
+        eliminarOcancelar = input(": ")
     if eliminarOcancelar == "1":    
-        eliminar_cliente = input("Ingrese nombre y apellido separado por espacio del cliente a eliminar: ").capitalize()
+        eliminar_cliente = input("\nIngrese nombre y apellido separado por espacio del cliente a eliminar: ")
+        eliminar_cliente = eliminar_cliente.lower().title()
         if eliminar_cliente in clientes:
-            print(f"El cliente {eliminar_cliente} ha sido eliminado.")
+            print(f"\nEl cliente {eliminar_cliente} ha sido eliminado.")
             del clientes[eliminar_cliente]
+            limpiarPantalla()
         else:
-            print("Cliente no encontrado.")
+            print("\nCliente no encontrado.")
+            limpiarPantalla()
     else:
-        print("Cancelado.")
+        print("\nCancelado.")
+        limpiarPantalla()
+    guardarTodos(datos_clientes,datos_citas_dt,datos_citas_dicc)
 
 def crearCitaNueva():
     """Función que valida un usuario y luego le permite elegir fecha y hora para una cita, días disponibles de Lunes a Viernes en un rango de la fecha actual y el rango de días del próximo mes,
        ofrece horarios entre las 10 y 18 hs y verifica que no haya horarios duplicados en la misma fecha. Días feriados no incluidos en las excepciones.
     """
+    datos_clientes,datos_citas_dt,datos_citas_dicc = cargarTodos()
+    servicios = ["consulta general","exámenes médicos","baño","corte de pelo","baño y corte de pelo","revisión médica","vacunación","desparasitación","cirugía"]
     dias_citas_disponibles, horas_disponibles = diasHorasDisponibles()
     print("Menú agregar nueva cita.")
-    validar_cliente = input("Ingrese nombre y apellido del cliente separado por espacio: ").capitalize()
+    validar_cliente = input("\nIngrese nombre y apellido del cliente separado por espacio: ")
+    validar_cliente = validar_cliente.lower().title()
     if validar_cliente in clientes:
-        seleccion_dia, seleccion_horario, seleccion_servicio = crearCita()
-        cita_dt = dt.datetime.strptime(((str(dias_citas_disponibles[seleccion_dia-1])).replace("Lunes ","").replace("Martes ","").replace("Miércoles ","").replace("Jueves ","").replace("Viernes ",""))+(str(horas_disponibles[seleccion_horario-1])),"%d/%m/%y%H:%M")
-        if cita_dt in citas_dt:
-            print("Fecha/horario no disponible.")
+        if clientes[validar_cliente].get("Cita","")=="":
+            seleccion_dia, seleccion_horario, seleccion_servicio = crearCita()
+            cita_dt = dt.datetime.strptime(((str(dias_citas_disponibles[seleccion_dia-1])).replace("Lunes ","").replace("Martes ","").replace("Miércoles ","").replace("Jueves ","").replace("Viernes ",""))+(str(horas_disponibles[seleccion_horario-1])),"%d/%m/%y%H:%M")
+            cita_dt = dt.datetime.strftime(cita_dt,"%d/%m/%y, %H:%M")
+            if cita_dt in citas_dt:
+                print("\nFecha/horario no disponible.")
+                limpiarPantalla()
+            else:
+                citas_dt.append(cita_dt)
+                citas_dicc[validar_cliente]={"Fecha":f"{dias_citas_disponibles[seleccion_dia-1]}","Hora":f"{horas_disponibles[seleccion_horario-1]}","Servicio":f"{servicios[seleccion_servicio-1]}"}
+                clientes[validar_cliente]["Cita"] = cita_dt
+                print(f"\nCita registrada para {validar_cliente} el día {dias_citas_disponibles[seleccion_dia-1]}, en el horario {horas_disponibles[seleccion_horario-1]}hs. para el servicio de: \"{servicios[seleccion_servicio-1]}\".")
+                time.sleep(2)
+                limpiarPantalla()
         else:
-            citas_dt.append(cita_dt)
-            citas_dicc[validar_cliente]={"Fecha":f"{dias_citas_disponibles[seleccion_dia-1]}","Hora":f"{horas_disponibles[seleccion_horario-1]}","Servicio":f"{servicios[seleccion_servicio-1]}"}
-            clientes[validar_cliente]["Cita"] = cita_dt
-            print(f"Cita registrada para {validar_cliente} el día {dias_citas_disponibles[seleccion_dia-1]}, en el horario {horas_disponibles[seleccion_horario-1]}hs. para el servicio de: \"{servicios[seleccion_servicio-1]}\".")
+            print(f"\nEl usuario {validar_cliente} ya tiene una cita pendiente.") 
+            limpiarPantalla()       
     else:
-        print("Cliente no encontrado.")
+        print("\nCliente no encontrado.")
+        limpiarPantalla()
+    guardarTodos(datos_clientes,datos_citas_dt,datos_citas_dicc)
 
 def modificarOcancelarCita():
     """Función que valida a un cliente existente y permite modificar o cancelar sus citas.
     """
+    datos_clientes,datos_citas_dt,datos_citas_dicc = cargarTodos()
+    servicios = ["consulta general","exámenes médicos","baño","corte de pelo","baño y corte de pelo","revisión médica","vacunación","desparasitación","cirugía"]
     dias_citas_disponibles, horas_disponibles = diasHorasDisponibles()
-    modificar_cancelar_volver = ["Modificar cita","Cancelar cita","Volver al menú principal."]
-    print("Menú modificar o cancelar cita.")
+    modificar_cancelar_volver = ["Modificar cita","Cancelar cita","Volver al menú principal"]
+    print("Menú modificar o cancelar cita.\n")
     menu(modificar_cancelar_volver)
     modificarOcancelar = input(": ")
     while not re.match("^[123]+$",modificarOcancelar):
-        modificarOcancelar = input("Opción no válida, intente nuevamente: ")
+        opcNoValida()
+        modificarOcancelar = input(": ")
     if modificarOcancelar != "3":
-        validar_cliente = input("Ingrese nombre y apellido del cliente separado por espacio: ").capitalize()
+        validar_cliente = input("\nIngrese nombre y apellido del cliente separado por espacio: ")
+        validar_cliente = validar_cliente.lower().title()
         if validar_cliente in clientes:
             if modificarOcancelar == "1":
-                citas_diccModif = {}
-                print("Modificar cita.")
-                seleccion_dia, seleccion_horario, seleccion_servicio = crearCita()
-                cita_dt = dt.datetime.strptime((str(dias_citas_disponibles[seleccion_dia-1]).replace("Lunes ","").replace("Martes ","").replace("Miércoles ","").replace("Jueves ","").replace("Viernes ",""))+(str(horas_disponibles[seleccion_horario-1])),"%d/%m/%y%H:%M")
-                citas_diccModif[validar_cliente]={"Fecha":f"{dias_citas_disponibles[seleccion_dia-1]}","Hora":f"{horas_disponibles[seleccion_horario-1]}","Servicio":f"{servicios[seleccion_servicio-1]}"}
-                if not cita_dt == clientes[validar_cliente]["Cita"]:
-                    citas_dt.remove(clientes[validar_cliente]["Cita"])
-                    citas_dt.append(cita_dt)
-                    clientes[validar_cliente]["Cita"]=cita_dt
-                    citas_dicc[validar_cliente]=citas_diccModif[validar_cliente]
-                    print("Cita modificada con éxito.")
-                elif cita_dt == clientes[validar_cliente]["Cita"]:
-                    if citas_dicc[validar_cliente]["Servicio"]!=citas_diccModif[validar_cliente]["Servicio"]:
-                        citas_dicc[validar_cliente]["Servicio"]=citas_diccModif[validar_cliente]["Servicio"]
-                        print("Cita modificada con éxito.")
-                    else:
-                        print("La cita modificada es similar a la ya existente.")
+                if clientes[validar_cliente].get("Cita","") == "":
+                    print("\nEl cliente ingresado no tiene ninguna cita pendiente.")
+                    limpiarPantalla()
+                else:
+                    limpiarPantalla()
+                    citas_diccModif = {}
+                    print("Modificar cita.\n")
+                    seleccion_dia, seleccion_horario, seleccion_servicio = crearCita()
+                    cita_dt = dt.datetime.strptime((str(dias_citas_disponibles[seleccion_dia-1]).replace("Lunes ","").replace("Martes ","").replace("Miércoles ","").replace("Jueves ","").replace("Viernes ",""))+(str(horas_disponibles[seleccion_horario-1])),"%d/%m/%y%H:%M")
+                    cita_dt = dt.datetime.strftime(cita_dt,"%d/%m/%y, %H:%M")
+                    citas_diccModif[validar_cliente]={"Fecha":f"{dias_citas_disponibles[seleccion_dia-1]}","Hora":f"{horas_disponibles[seleccion_horario-1]}","Servicio":f"{servicios[seleccion_servicio-1]}"}
+                    if not cita_dt == clientes[validar_cliente]["Cita"]:
+                        citas_dt.remove(clientes[validar_cliente]["Cita"])
+                        citas_dt.append(cita_dt)
+                        clientes[validar_cliente]["Cita"]=cita_dt
+                        citas_dicc[validar_cliente]=citas_diccModif[validar_cliente]
+                        print("\nCita modificada con éxito.")
+                        limpiarPantalla()
+                    elif cita_dt == clientes[validar_cliente]["Cita"]:
+                        if citas_dicc[validar_cliente]["Servicio"]!=citas_diccModif[validar_cliente]["Servicio"]:
+                            citas_dicc[validar_cliente]["Servicio"]=citas_diccModif[validar_cliente]["Servicio"]
+                            print("\nCita modificada con éxito.")
+                            limpiarPantalla()
+                        else:
+                            print("\nLa cita modificada es similar a la ya existente.")
+                            limpiarPantalla()
             elif modificarOcancelar == "2":
                 try:
                     citas_dt.remove(clientes[validar_cliente]["Cita"])
-                    print(f'La cita del cliente {validar_cliente} para el día {citas_dicc[validar_cliente]["Fecha"]}, a las {citas_dicc[validar_cliente]["Hora"]}hs. para el servicio: {citas_dicc[validar_cliente]["Servicio"]}, Ha sido cancelada con éxito.')
+                    print(f'\nLa cita del cliente {validar_cliente} para el día {citas_dicc[validar_cliente]["Fecha"]}, a las {citas_dicc[validar_cliente]["Hora"]}hs. para el servicio: {citas_dicc[validar_cliente]["Servicio"]}, ha sido cancelada con éxito.')
                     del citas_dicc[validar_cliente]
                     del clientes[validar_cliente]["Cita"]
+                    time.sleep(2)
+                    limpiarPantalla()
                 except:
-                    print("Ninguna cita encontrada")
+                    print("\nNinguna cita encontrada")
+                    limpiarPantalla()
         else:
-            print("Cliente no encontrado en la base de datos.")
+            print("\nCliente no encontrado.")
+            limpiarPantalla()
     elif modificarOcancelar == "3":
-        print("Cancelado.") 
+        print("\nCancelado.")
+        limpiarPantalla()
+    guardarTodos(datos_clientes,datos_citas_dt,datos_citas_dicc)
 
 def mostrarDatos(titulo,key):
     """Función que accede al diccionario "clientes" y muestra uno o todos los valores para cada una de las claves.
 
     Args:
-        titulo (str): string relacionado con el argumento key.Ej: si "key" = "Telefono" entonces "titulo" = "telefonos" 
+        titulo (str): string relacionado con el argumento key.Ej: si "key" = "Teléfono" entonces "titulo" = "teléfonos" 
         key (str): clave perteneciente a los diccionarios dentro de "clientes[x]"
     """
+    datos_clientes,datos_citas_dt,datos_citas_dicc = cargarTodos()
     uno_o_todos = ["Mostrar un cliente","Mostrar todos los clientes"]
-    print(f"Mostrar {titulo}.")
+    print(f"Mostrar {titulo}.\n")
     menu(uno_o_todos)
     uno_o_todos_seleccion = input(": ")
     while not re.match("^[12]+$",uno_o_todos_seleccion):
-        uno_o_todos_seleccion = input("Opción no válida, intente nuevamente: ")
+        opcNoValida()
+        uno_o_todos_seleccion = input(": ")
     if uno_o_todos_seleccion == "1":
-        verificar_cliente = input("Ingrese nombre y apellido del cliente separado por espacio: ").capitalize()
+        verificar_cliente = input("\nIngrese nombre y apellido del cliente separado por espacio: ")
+        verificar_cliente = verificar_cliente.lower().title()
         if verificar_cliente in clientes:
             if key == "Cita":
-                print(f"{verificar_cliente} ► {key} ► Fecha:{citas_dicc[verificar_cliente]['Fecha']}, Hora:{citas_dicc[verificar_cliente]['Hora']}hs. , Servicio:{citas_dicc[verificar_cliente]['Servicio']}.")
+                print(f"\n{verificar_cliente} ► {key} ► Fecha:{citas_dicc[verificar_cliente]['Fecha']}, Hora:{citas_dicc[verificar_cliente]['Hora']}hs. , Servicio:{citas_dicc[verificar_cliente]['Servicio'].title()}.\n")
+                limpiarPantalla()
             else:
-                print(f"{verificar_cliente} ► {key}: {clientes[verificar_cliente][key]}")
+                print(f"\n{verificar_cliente} ► {key}: {clientes[verificar_cliente][key]}")
         else:
-            print("Cliente no encontrado en la base de datos.")
+            print("\nCliente no encontrado.")
     elif uno_o_todos_seleccion == "2":
         for i, (usuario, diccionario) in enumerate(clientes.items(), start=1):
             key1 = diccionario.get(key, "")
-            print(f"{i}.{usuario} ► {key}: {key1}")
+            print(f"{i}.{usuario} ► {key}: {key1}\n")
+    time.sleep(3)
+    limpiarPantalla()
+    guardarTodos(datos_clientes,datos_citas_dt,datos_citas_dicc)
 
 def listaClientes():
     """Función que imprime en pantalla información general o específica de uno o todos los clientes según se le indique.
     """
+    datos_clientes,datos_citas_dt,datos_citas_dicc = cargarTodos()
     uno_o_todos = ["Mostrar un cliente","Mostrar todos los clientes"]
     opciones_lista_clientes=["Mostrar nombre y apellido","Mostrar todos los datos","Mostrar Direcciones","Mostrar Teléfonos","Mostrar mascotas","Mostrar citas","Cancelar"]
-    print("Menú listar clientes y datos.")
+    print("Menú listar clientes y datos.\n")
     menu(opciones_lista_clientes)
     opcion_usuario = input(": ")
     while not opcion_usuario.isdigit():
-        opcion_usuario = input("Opción no válida, intente nuevamente: ")
+        opcNoValida()
+        opcion_usuario = input(": ")
     while int(opcion_usuario) < 1 or int(opcion_usuario) > opciones_lista_clientes.__len__():
-        opcion_usuario = input("Opción no válida, intente nuevamente: ")
+        opcNoValida()
+        opcion_usuario = input(": ")
     match opcion_usuario:
         case "1":
-            print("Lista de clientes")
+            limpiarPantalla()
+            print("Lista de clientes\n")
             for i, key in enumerate(clientes.keys()):
-                print(f"{i+1}.{key}")
+                print(f"{i+1}.{key}\n")
+                limpiarPantalla()
         case "2":
-            print("Mostrar todos los datos.")
+            limpiarPantalla()
+            print("Mostrar todos los datos.\n")
             menu(uno_o_todos)
             uno_o_todos_seleccion = input(": ")
             while not re.match("^[12]+$",uno_o_todos_seleccion):
-                uno_o_todos_seleccion = input("Opción no válida, intente nuevamente: ")
+                opcNoValida()
+                uno_o_todos_seleccion = input(": ")
             if uno_o_todos_seleccion == "1":
-                verificar_cliente = input("Ingrese nombre y apellido del cliente separado por espacio: ").capitalize()
+                verificar_cliente = input("\nIngrese nombre y apellido del cliente separado por espacio: ")
+                verificar_cliente = verificar_cliente.lower().title()
                 if verificar_cliente in clientes:
-                    print(f"{verificar_cliente}:{clientes[verificar_cliente]}")
+                    print(f"\n{verificar_cliente}:{clientes[verificar_cliente]}\n")
+                    time.sleep(2.5)
+                    limpiarPantalla()
                 else:
-                    print("Cliente no encontrado en la base de datos.")
+                    print("\nCliente no encontrado en la base de datos.")
+                    limpiarPantalla()
             elif uno_o_todos_seleccion == "2":
                 for i,key in enumerate(clientes.keys(), start=1):
-                    print(f"{i}.{key}:{clientes[key]}")
+                    print(f"{i}.{key}:{clientes[key]}\n")
+                time.sleep(2)
+                limpiarPantalla()
         case "3":
+            limpiarPantalla()
             mostrarDatos("direcciones","Dirección")
         case "4":
+            limpiarPantalla()
             mostrarDatos("teléfonos","Teléfono")
         case "5":
+            limpiarPantalla()
             mostrarDatos("mascotas","Mascota/s")
         case "6":
+            limpiarPantalla()
             mostrarDatos("citas","Cita")
         case "7":
-            print("Cancelado")
+            print("Cancelado.")
+            limpiarPantalla()
+    guardarTodos(datos_clientes,datos_citas_dt,datos_citas_dicc)
                    
 def main():
     """Ejecución principal
     """
     ejecutar = True
-    print("Bienvenido a la app de la veterinaria.\nPor favor elija una opción del menú.") # mensaje de bienvenida a la app
+    lista_menu_principal = ["Agregar cliente nuevo","Modificar cliente","Eliminar cliente","Agendar cita","Modificar o cancelar cita","Lista de clientes","Salir"]
+    print("\nBienvenido a la app de la veterinaria.\nPor favor, elija una opción del menú.\n") # mensaje de bienvenida a la app
     while ejecutar == True:
         menu(lista_menu_principal) # muestra el menu principal
-        selección_usuario = input("Ingrese su respuesta: ") # pide la seleccion del usuario para el menu deseado
+        selección_usuario = input("\nIngrese su respuesta: ") # pide la seleccion del usuario para el menu deseado
         if selección_usuario == "1": # menú agregar cliente nuevo
+            limpiarPantalla()
             clienteNuevo()
         elif selección_usuario == "2": # menú modificar cliente
+            limpiarPantalla()
             modificarCliente()
         elif selección_usuario == "3": # menú eliminar cliente
+            limpiarPantalla()
             eliminarCliente()
         elif selección_usuario == "4": # menú crear cita
+            limpiarPantalla()
             crearCitaNueva()
         elif selección_usuario == "5": # menú modificar o cancelar cita
+            limpiarPantalla()
             modificarOcancelarCita()            
         elif selección_usuario == "6": # menú lista de clientes
+            limpiarPantalla()
             listaClientes()
         elif selección_usuario == "7": # menú salir
-            print("Programa finalizado.")
+            print("\nSaliendo del programa...")
+            time.sleep(2)
             break
         else:
             print("Opción no válida, intentelo nuevamente: ")
+            limpiarPantalla()
+            
+def cargarClientes():
+    """Función que abre un archivo .json en modo lectura que contiene o va a contener toda la información del diccionario clientes.
+
+    Returns:
+        list: [{},{},{}]
+    """
+    try:
+        with open('clientes.json', 'r') as archivo_clientes:
+            datos_clientes = json.load(archivo_clientes)
+    except FileNotFoundError:
+        datos_clientes = []
+    
+    return datos_clientes
+
+def guardarClientes(datos_clientes):
+    """Función que abre un archivo .json en modo escritura y guarda la información del diccionario clientes en él.
+
+    Args:
+        datos_clientes (list): [{},{},{}]
+    """
+    with open('clientes.json', 'w') as archivo_clientes:
+        json.dump(datos_clientes, archivo_clientes, indent=3)
+
+def cargarCitas():
+    """Función que abre un archivo .json en modo lectura que contiene o va a contener todas las citas creadas.
+
+    Returns:
+        list: []
+    """
+    try:
+        with open('citas_dt.json', 'r') as archivo_citas_dt:
+            datos_citas_dt = json.load(archivo_citas_dt)
+    except FileNotFoundError:
+        datos_citas_dt = []
+    
+    return datos_citas_dt
+
+def guardarCitas(datos_citas_dt):
+    """Función que abre un archivo .json en modo escritura y guarda la información de la lista citas_dt en él.
+
+    Args:
+        datos_citas_dt (list): [i0,i1,in]
+    """
+    with open('citas_dt.json', 'w') as archivo_citas_dt:
+        json.dump(datos_citas_dt, archivo_citas_dt, indent=3)
+
+def cargarCitasDicc():
+    """Función que abre un archivo .json en modo lectura y guarda la información del diccionario citas_dicc en él.
+
+    Returns:
+        list: [{},{},{}]
+    """
+    try:
+        with open('citas_dicc.json', 'r') as archivo_citas_dicc:
+            datos_citas_dicc = json.load(archivo_citas_dicc)
+    except FileNotFoundError:
+        datos_citas_dicc = []
+    
+    return datos_citas_dicc
+
+def guardarCitasDicc(datos_citas_dicc):
+    """Función que abre un archivo .json en modo escritura y guarda la información de la lista citas_dicc en él.
+
+    Args:
+        datos_citas_dicc (list): [{},{},{}]
+    """
+    with open('citas_dicc.json', 'w') as archivo_citas_dicc:
+        json.dump(datos_citas_dicc, archivo_citas_dicc, indent=3)
+
+def cargarTodos():
+    """Función que carga los tres archivos .json en variables, pasa la información a sus resepctivas colecciones para el correcto funcionamiento del código y luego
+       les otorga a las variables de carga un valor de lista vacío para luego poder guardarle las actualizaciones
+
+    Returns:
+        list: [] , [] , []
+    """
+    datos_clientes = cargarClientes()
+    if not datos_clientes == []:
+        for diccionario in datos_clientes:
+            for (key,value) in diccionario.items():
+                clientes[key]=value
+    datos_citas_dt=cargarCitas()
+    citas_dt = datos_citas_dt
+    datos_citas_dicc=cargarCitasDicc()
+    if not datos_citas_dicc == []:
+        for diccionario in datos_citas_dicc:
+            for (key,value) in diccionario.items():
+                citas_dicc[key]=value
+    datos_clientes,datos_citas_dt,datos_citas_dicc = [],[],[]
+    return datos_clientes,datos_citas_dt,datos_citas_dicc
+
+def guardarTodos(datos_clientes,datos_citas_dt,datos_citas_dicc):
+    """Función que guarda la información de los clientes en tres variables que luego serán escritas en tres archivos .json.
+
+    Args:
+        datos_clientes (list): [{},{},{}]
+        datos_citas_dt (list): [i0,i1,i2,in...]
+        datos_citas_dicc (list): [{}{}{}}]
+    """
+    datos_clientes.append(clientes)
+    guardarClientes(datos_clientes)
+    datos_citas_dt = citas_dt
+    guardarCitas(datos_citas_dt)
+    datos_citas_dicc.append(citas_dicc)
+    guardarCitasDicc(datos_citas_dicc)
 
 if __name__ == '__main__':
     main()
